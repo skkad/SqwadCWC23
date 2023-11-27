@@ -17,12 +17,20 @@ app.post("/user-signup", async (req, res) => {
   try {
     const { error } = validateUser(req.body);
     if (error) {
-      return res.status(400).json({ error: error.details[0].message });
+      return res
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "Content-Type")
+        .status(400)
+        .json({ error: error.details[0].message });
     }
 
     let user = await User.findOne({ email: req.body.email });
     if (user) {
-      return res.status(400).json({ error: "That user already exists!" });
+      return res
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "Content-Type")
+        .status(400)
+        .json({ error: "That user already exists!" });
     }
 
     user = new User({
@@ -32,10 +40,18 @@ app.post("/user-signup", async (req, res) => {
     });
     await user.save();
 
-    res.status(201).json({ message: "User registered successfully", user });
+    res
+      .header("Access-Control-Allow-Origin", "*")
+      .header("Access-Control-Allow-Headers", "Content-Type")
+      .status(201)
+      .json({ message: "User registered successfully", user });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "An error occurred" });
+    res
+      .header("Access-Control-Allow-Origin", "*")
+      .header("Access-Control-Allow-Headers", "Content-Type")
+      .status(500)
+      .json({ error: "An error occurred" });
   }
 });
 
@@ -44,13 +60,21 @@ app.post("/user-login", async (req, res) => {
     // First Validate The Request
     const { error } = validateLogin(req.body);
     if (error) {
-      return res.status(400).send(error.details[0].message);
+      return res
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "Content-Type")
+        .status(400)
+        .send(error.details[0].message);
     }
 
     //  Now find the user by their email address
     let user = await User.findOne({ email: req.body.email });
     if (!user) {
-      return res.status(400).send("Incorrect email or password.");
+      return res
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "Content-Type")
+        .status(400)
+        .send("Incorrect email or password.");
     }
 
     // Then validate the Credentials in MongoDB match
@@ -58,15 +82,25 @@ app.post("/user-login", async (req, res) => {
     // const validPassword = await bcrypt.compare(req.body.password, user.password);
     const validPassword = user.password === req.body.password;
     if (!validPassword) {
-      return res.status(400).send("Incorrect email or password.");
+      return res
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "Content-Type")
+        .status(400)
+        .send("Incorrect email or password.");
     }
     // res.send(true);
     res
+      .header("Access-Control-Allow-Origin", "*")
+      .header("Access-Control-Allow-Headers", "Content-Type")
       .status(200)
       .json({ message: "User loged In successfully", response: user });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "An error occurred" });
+    res
+      .header("Access-Control-Allow-Origin", "*")
+      .header("Access-Control-Allow-Headers", "Content-Type")
+      .status(500)
+      .json({ error: "An error occurred" });
   }
 });
 /* User registraion apis */
@@ -79,7 +113,11 @@ app.post("/selection", async (req, res) => {
     const { userId, selectedPlayersId } = req.body;
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "Content-Type")
+        .status(404)
+        .json({ message: "User not found" });
     }
     const selectedPlayers = await Players.find({
       _id: { $in: selectedPlayersId },
@@ -89,6 +127,8 @@ app.post("/selection", async (req, res) => {
     const uniqueId = await Selection.findOne({ user: userId });
     if (uniqueId && uniqueId.selectedPlayers.length === 15) {
       return res
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "Content-Type")
         .status(400)
         .json({ message: "User has already submitted a selection team" });
     } else {
@@ -100,14 +140,22 @@ app.post("/selection", async (req, res) => {
       });
 
       const savedSelection = await newSelection.save();
-      res.status(200).json({
-        message: "Selection saved successfully",
-        selection: savedSelection,
-      });
+      res
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "Content-Type")
+        .status(200)
+        .json({
+          message: "Selection saved successfully",
+          selection: savedSelection,
+        });
     }
   } catch (err) {
     console.error(err);
-    res.status(400).json({ message: "Selection failed", error: err.message });
+    res
+      .header("Access-Control-Allow-Origin", "*")
+      .header("Access-Control-Allow-Headers", "Content-Type")
+      .status(400)
+      .json({ message: "Selection failed", error: err.message });
   }
 });
 
@@ -117,7 +165,11 @@ app.get("/mySquad", async (req, res) => {
     const id = req.query.userId;
 
     if (!id) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "Content-Type")
+        .status(404)
+        .json({ message: "User not found" });
     } else {
       const players = await Selection.find({ user: id });
 
@@ -136,14 +188,22 @@ app.get("/mySquad", async (req, res) => {
       // const selectedPlayers = players.selectedPlayers.map((item) =>
       //   Players.findById(item).populate().exec()
       // );
-      res.status(200).json({
-        message: "Success",
-        response: players,
-      });
+      res
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "Content-Type")
+        .status(200)
+        .json({
+          message: "Success",
+          response: players,
+        });
     }
   } catch (err) {
     console.error(err);
-    res.status(400).json({ message: "Oops", error: err.message });
+    res
+      .header("Access-Control-Allow-Origin", "*")
+      .header("Access-Control-Allow-Headers", "Content-Type")
+      .status(400)
+      .json({ message: "Oops", error: err.message });
   }
 });
 
@@ -157,9 +217,17 @@ app.get("/mySquad", async (req, res) => {
 app.post("/upload", async (req, res) => {
   try {
     const player = await Players.create(req.body);
-    res.status(200).json({ message: "Success", response: player });
+    res
+      .header("Access-Control-Allow-Origin", "*")
+      .header("Access-Control-Allow-Headers", "Content-Type")
+      .status(200)
+      .json({ message: "Success", response: player });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .header("Access-Control-Allow-Origin", "*")
+      .header("Access-Control-Allow-Headers", "Content-Type")
+      .status(500)
+      .json({ message: error.message });
   }
 });
 // get players data
@@ -192,17 +260,31 @@ app.get("/single", async (req, res) => {
       // console.log("2", players);
       const usersWithRole = players.filter((user) => user.role === role);
       if (usersWithRole.length > 0) {
-        res.status(200).json({ message: "Success", response: usersWithRole });
+        res
+          .header("Access-Control-Allow-Origin", "*")
+          .header("Access-Control-Allow-Headers", "Content-Type")
+          .status(200)
+          .json({ message: "Success", response: usersWithRole });
       } else {
         res
+          .header("Access-Control-Allow-Origin", "*")
+          .header("Access-Control-Allow-Headers", "Content-Type")
           .status(404)
           .json({ message: `No players found with role: ${role}` });
       }
     } else {
-      res.status(200).json({ message: "No Data", response: usersWithRole });
+      res
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "Content-Type")
+        .status(200)
+        .json({ message: "No Data", response: usersWithRole });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .header("Access-Control-Allow-Origin", "*")
+      .header("Access-Control-Allow-Headers", "Content-Type")
+      .status(500)
+      .json({ message: error.message });
   }
 });
 

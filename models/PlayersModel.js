@@ -6,6 +6,10 @@ let PlayersSchema = new Schema({
     type: String,
     required: true,
   },
+  image: {
+    type: String,
+    required: false,
+  },
   age: {
     type: Number,
     require: true,
