@@ -167,10 +167,16 @@ app.get("/allPlayers", async (req, res) => {
   try {
     const players = await Players.find();
     res
+      .header("Access-Control-Allow-Origin", "*")
+      .header("Access-Control-Allow-Headers", "Content-Type")
       .status(200)
       .json({ message: "Success", count: players.length, response: players });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .header("Access-Control-Allow-Origin", "*")
+      .header("Access-Control-Allow-Headers", "Content-Type")
+      .status(500)
+      .json({ message: error.message });
   }
 });
 // filters players by roles
