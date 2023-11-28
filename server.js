@@ -246,11 +246,14 @@ app.get("/single", async (req, res) => {
     // const { role } = req.params;
     // const players = await Players.find(role);
     // res.status(200).json({ message: "Success", response: players });
-    const role = req.query.role;
-    const players = await Players.find();
-    if (role !== "") {
+    const { role, id } = req.query;
+
+    console.log("query", role, id);
+
+    if (role !== "" && role !== undefined) {
       console.log("1", role);
       // console.log("2", players);
+      const players = await Players.find();
       const usersWithRole = players.filter((user) => user.role === role);
       if (usersWithRole.length > 0) {
         res
@@ -264,6 +267,21 @@ app.get("/single", async (req, res) => {
           .header("Access-Control-Allow-Headers", "Content-Type")
           .status(404)
           .json({ message: `No players found with role: ${role}` });
+      }
+    } else if (id !== "" && role === undefined) {
+      const usersWithRole = await Players.findById(id);
+      if (usersWithRole) {
+        res
+          .header("Access-Control-Allow-Origin", "*")
+          .header("Access-Control-Allow-Headers", "Content-Type")
+          .status(200)
+          .json({ message: "Success", response: usersWithRole });
+      } else {
+        res
+          .header("Access-Control-Allow-Origin", "*")
+          .header("Access-Control-Allow-Headers", "Content-Type")
+          .status(404)
+          .json({ message: `No players found with id: ${id}` });
       }
     } else {
       res
