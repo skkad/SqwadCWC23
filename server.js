@@ -15,22 +15,23 @@ app.use(express.json());
 // login and sign up apis
 app.post("/user-signup", async (req, res) => {
   try {
+    res.set({
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type",
+    });
+
+    if (req.method === "OPTIONS") {
+      // Preflight request, respond with 200 OK
+      return res.sendStatus(200);
+    }
     const { error } = validateUser(req.body);
     if (error) {
-      return res
-        .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type")
-        .status(400)
-        .json({ error: error.details[0].message });
+      return res.status(400).json({ error: error.details[0].message });
     }
 
     let user = await User.findOne({ email: req.body.email });
     if (user) {
-      return res
-        .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type")
-        .status(400)
-        .json({ error: "That user already exists!" });
+      return res.status(400).json({ error: "That user already exists!" });
     }
 
     user = new User({
@@ -40,18 +41,10 @@ app.post("/user-signup", async (req, res) => {
     });
     await user.save();
 
-    res
-      .header("Access-Control-Allow-Origin", "*")
-      .header("Access-Control-Allow-Headers", "Content-Type")
-      .status(201)
-      .json({ message: "User registered successfully", user });
+    res.status(201).json({ message: "User registered successfully", user });
   } catch (err) {
     console.error(err);
-    res
-      .header("Access-Control-Allow-Origin", "*")
-      .header("Access-Control-Allow-Headers", "Content-Type")
-      .status(500)
-      .json({ error: "An error occurred" });
+    res.status(500).json({ error: "An error occurred" });
   }
 });
 
