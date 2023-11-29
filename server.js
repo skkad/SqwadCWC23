@@ -12,7 +12,7 @@ const app = express();
 app.use(express.json());
 
 app.use(function (req, res, next) {
-  let allowedOrigins = ["https://localhost:3000", "*"];
+  let allowedOrigins = ["http://localhost:3000/", "*"];
   let origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
@@ -193,13 +193,11 @@ app.post("/getdetails", async (req, res) => {
         });
     });
     await Promise.all(promises);
-    res
-      .status(200)
-      .json({
-        status: "Success",
-        count: detailsResponse.length,
-        data: detailsResponse,
-      });
+    res.status(200).json({
+      status: "Success",
+      count: detailsResponse.length,
+      data: detailsResponse,
+    });
   } catch (err) {
     console.error(err);
     res.status(400).json({ message: "Selection failed", error: err.message });
