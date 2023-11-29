@@ -1,4 +1,5 @@
 const express = require("express");
+const ObjectId = require("mongodb");
 const Joi = require("joi");
 // Joi.objectId = require("joi-objectid")(Joi);
 const mongoose = require("mongoose");
@@ -10,16 +11,24 @@ const validateLogin = require("./middleware/auth");
 const app = express();
 app.use(express.json());
 
+app.use(function (req, res, next) {
+  let allowedOrigins = ["https://localhost:3000", "*"];
+  let origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin,X-Requested-With,Content-Type,Accept"
+  );
+  next();
+});
+
 /* User registraion apis */
 
 // login and sign up apis
 app.post("/user-signup", async (req, res) => {
   try {
-    res.set({
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type",
-    });
-
     if (req.method === "OPTIONS") {
       // Preflight request, respond with 200 OK
       return res.sendStatus(200);
@@ -53,21 +62,13 @@ app.post("/user-login", async (req, res) => {
     // First Validate The Request
     const { error } = validateLogin(req.body);
     if (error) {
-      return res
-        .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type")
-        .status(400)
-        .send(error.details[0].message);
+      return res.status(400).send(error.details[0].message);
     }
 
     //  Now find the user by their email address
     let user = await User.findOne({ email: req.body.email });
     if (!user) {
-      return res
-        .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type")
-        .status(400)
-        .send("Incorrect email or password.");
+      return res.status(400).send("Incorrect email or password.");
     }
 
     // Then validate the Credentials in MongoDB match
@@ -75,25 +76,15 @@ app.post("/user-login", async (req, res) => {
     // const validPassword = await bcrypt.compare(req.body.password, user.password);
     const validPassword = user.password === req.body.password;
     if (!validPassword) {
-      return res
-        .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type")
-        .status(400)
-        .send("Incorrect email or password.");
+      return res.status(400).send("Incorrect email or password.");
     }
     // res.send(true);
     res
-      .header("Access-Control-Allow-Origin", "*")
-      .header("Access-Control-Allow-Headers", "Content-Type")
       .status(200)
       .json({ message: "User loged In successfully", response: user });
   } catch (err) {
     console.error(err);
-    res
-      .header("Access-Control-Allow-Origin", "*")
-      .header("Access-Control-Allow-Headers", "Content-Type")
-      .status(500)
-      .json({ error: "An error occurred" });
+    res.status(500).json({ error: "An error occurred" });
   }
 });
 /* User registraion apis */
@@ -106,11 +97,7 @@ app.post("/selection", async (req, res) => {
     const { userId, selectedPlayersId } = req.body;
     const user = await User.findById(userId);
     if (!user) {
-      return res
-        .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type")
-        .status(404)
-        .json({ message: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     }
     const selectedPlayers = await Players.find({
       _id: { $in: selectedPlayersId },
@@ -120,8 +107,6 @@ app.post("/selection", async (req, res) => {
     const uniqueId = await Selection.findOne({ user: userId });
     if (uniqueId && uniqueId.selectedPlayers.length === 15) {
       return res
-        .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type")
         .status(400)
         .json({ message: "User has already submitted a selection team" });
     } else {
@@ -133,22 +118,14 @@ app.post("/selection", async (req, res) => {
       });
 
       const savedSelection = await newSelection.save();
-      res
-        .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type")
-        .status(200)
-        .json({
-          message: "Selection saved successfully",
-          selection: savedSelection,
-        });
+      res.status(200).json({
+        message: "Selection saved successfully",
+        selection: savedSelection,
+      });
     }
   } catch (err) {
     console.error(err);
-    res
-      .header("Access-Control-Allow-Origin", "*")
-      .header("Access-Control-Allow-Headers", "Content-Type")
-      .status(400)
-      .json({ message: "Selection failed", error: err.message });
+    res.status(400).json({ message: "Selection failed", error: err.message });
   }
 });
 
@@ -158,11 +135,7 @@ app.get("/mySquad", async (req, res) => {
     const id = req.query.userId;
 
     if (!id) {
-      return res
-        .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type")
-        .status(404)
-        .json({ message: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     } else {
       const players = await Selection.find({ user: id });
 
@@ -181,26 +154,57 @@ app.get("/mySquad", async (req, res) => {
       // const selectedPlayers = players.selectedPlayers.map((item) =>
       //   Players.findById(item).populate().exec()
       // );
-      res
-        .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type")
-        .status(200)
-        .json({
-          message: "Success",
-          response: players,
-        });
+      res.status(200).json({
+        message: "Success",
+        response: players,
+      });
     }
   } catch (err) {
     console.error(err);
-    res
-      .header("Access-Control-Allow-Origin", "*")
-      .header("Access-Control-Allow-Headers", "Content-Type")
-      .status(400)
-      .json({ message: "Oops", error: err.message });
+    res.status(400).json({ message: "Oops", error: err.message });
   }
 });
 
 // api for getting player details selected
+app.post("/getdetails", async (req, res) => {
+  try {
+    const { idsToFind } = req.body;
+    // Find documents by ID
+    const detailsResponse = [];
+
+    const promises = idsToFind.map((id) => {
+      return Players.findById(id)
+        .then((result) => {
+          if (result) {
+            detailsResponse.push(result);
+          } else {
+            detailsResponse.push({
+              id,
+              error: `No details found for ID ${id}`,
+            });
+          }
+        })
+        .catch((err) => {
+          console.error(`Error finding details for ID ${id}:`, err);
+          detailsResponse.push({
+            id,
+            error: `Error finding details for ID ${id}`,
+          });
+        });
+    });
+    await Promise.all(promises);
+    res
+      .status(200)
+      .json({
+        status: "Success",
+        count: detailsResponse.length,
+        data: detailsResponse,
+      });
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ message: "Selection failed", error: err.message });
+  }
+});
 
 /* user squad */
 
@@ -210,17 +214,9 @@ app.get("/mySquad", async (req, res) => {
 app.post("/upload", async (req, res) => {
   try {
     const player = await Players.create(req.body);
-    res
-      .header("Access-Control-Allow-Origin", "*")
-      .header("Access-Control-Allow-Headers", "Content-Type")
-      .status(200)
-      .json({ message: "Success", response: player });
+    res.status(200).json({ message: "Success", response: player });
   } catch (error) {
-    res
-      .header("Access-Control-Allow-Origin", "*")
-      .header("Access-Control-Allow-Headers", "Content-Type")
-      .status(500)
-      .json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
 // get players data
@@ -228,16 +224,10 @@ app.get("/allPlayers", async (req, res) => {
   try {
     const players = await Players.find();
     res
-      .header("Access-Control-Allow-Origin", "*")
-      .header("Access-Control-Allow-Headers", "Content-Type")
       .status(200)
       .json({ message: "Success", count: players.length, response: players });
   } catch (error) {
-    res
-      .header("Access-Control-Allow-Origin", "*")
-      .header("Access-Control-Allow-Headers", "Content-Type")
-      .status(500)
-      .json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
 // filters players by roles
@@ -256,46 +246,24 @@ app.get("/single", async (req, res) => {
       const players = await Players.find();
       const usersWithRole = players.filter((user) => user.role === role);
       if (usersWithRole.length > 0) {
-        res
-          .header("Access-Control-Allow-Origin", "*")
-          .header("Access-Control-Allow-Headers", "Content-Type")
-          .status(200)
-          .json({ message: "Success", response: usersWithRole });
+        res.status(200).json({ message: "Success", response: usersWithRole });
       } else {
         res
-          .header("Access-Control-Allow-Origin", "*")
-          .header("Access-Control-Allow-Headers", "Content-Type")
           .status(404)
           .json({ message: `No players found with role: ${role}` });
       }
     } else if (id !== "" && role === undefined) {
       const usersWithRole = await Players.findById(id);
       if (usersWithRole) {
-        res
-          .header("Access-Control-Allow-Origin", "*")
-          .header("Access-Control-Allow-Headers", "Content-Type")
-          .status(200)
-          .json({ message: "Success", response: usersWithRole });
+        res.status(200).json({ message: "Success", response: usersWithRole });
       } else {
-        res
-          .header("Access-Control-Allow-Origin", "*")
-          .header("Access-Control-Allow-Headers", "Content-Type")
-          .status(404)
-          .json({ message: `No players found with id: ${id}` });
+        res.status(404).json({ message: `No players found with id: ${id}` });
       }
     } else {
-      res
-        .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type")
-        .status(200)
-        .json({ message: "No Data", response: usersWithRole });
+      res.status(200).json({ message: "No Data", response: usersWithRole });
     }
   } catch (error) {
-    res
-      .header("Access-Control-Allow-Origin", "*")
-      .header("Access-Control-Allow-Headers", "Content-Type")
-      .status(500)
-      .json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
 
